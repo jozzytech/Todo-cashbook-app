@@ -1,0 +1,1359 @@
+index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow Pro - Tasks & Cash Book Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.7); }
+        .task-card, .cash-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .task-card:hover, .cash-card:hover { transform: translateY(-2px); }
+        .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-screen flex flex-col md:flex-row transition-colors duration-200">
+
+    <div class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-blue-500/20">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-900 dark:text-white">TaskFlow & Cash</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="themeToggleMobile" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700">
+                <i class="fa-solid fa-moon dark:hidden"></i>
+                <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+            </button>
+            <button id="mobileMenuBtn" class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out md:static md:inset-auto">
+        <div>
+            <!-- Sidebar Header -->
+            <div class="p-5 flex items-center justify-between border-b border-gray-100 dark:border-slate-700/60">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-blue-500/20">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base text-slate-900 dark:text-white leading-none">TaskFlow Pro</h1>
+                        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Tasks & Cash Book</span>
+                    </div>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="p-4 space-y-2">
+                <button id="quickCreateTaskBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-xl shadow-md shadow-blue-600/20 flex items-center justify-center space-x-2 text-xs transition-all">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>New Task</span>
+                </button>
+                <button id="quickCreateCashBtn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-xl shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2 text-xs transition-all">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span>Log Cash Transaction</span>
+                </button>
+            </div>
+
+            <!-- Main Navigation Links -->
+            <nav class="px-3 space-y-1">
+                <div class="px-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Main Workspace</div>
+                
+                <button data-nav="all" class="nav-item active w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition-colors bg-blue-50 text-blue-600 dark:bg-slate-700/60 dark:text-blue-400">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-list-check w-4 text-center"></i>
+                        <span>Tasks & To-Dos</span>
+                    </div>
+                    <span id="navCountAll" class="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 font-semibold">0</span>
+                </button>
+
+                <button data-nav="cashbook" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-book-bookmark w-4 text-center text-emerald-500"></i>
+                        <span>Cash Book</span>
+                    </div>
+                    <span id="navCountCash" class="px-2 py-0.5 text-[10px] rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-semibold">0</span>
+                </button>
+
+                <button data-nav="dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                    <i class="fa-solid fa-chart-pie w-4 text-center text-indigo-500"></i>
+                    <span>Analytics & Reports</span>
+                </button>
+
+                <div class="px-3 pt-3 py-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Task Filters</div>
+
+                <button data-nav="today" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-calendar-day w-4 text-center text-amber-500"></i>
+                        <span>Due Today</span>
+                    </div>
+                    <span id="navCountToday" class="px-2 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-semibold">0</span>
+                </button>
+
+                <button data-nav="overdue" class="nav-item w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-triangle-exclamation w-4 text-center text-red-500"></i>
+                        <span>Overdue Tasks</span>
+                    </div>
+                    <span id="navCountOverdue" class="px-2 py-0.5 text-[10px] rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-semibold">0</span>
+                </button>
+            </nav>
+
+            <!-- Categories Section -->
+            <div class="p-4 mt-2 border-t border-gray-100 dark:border-slate-700/60">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Task Categories</span>
+                    <button id="addCategoryBtn" class="text-xs text-blue-600 dark:text-blue-400 hover:underline"><i class="fa-solid fa-plus"></i> Add</button>
+                </div>
+                <div id="categoryNavList" class="space-y-1 max-h-32 overflow-y-auto pr-1">
+                    <!-- Dynamic task categories -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Footer Controls -->
+        <div class="p-4 border-t border-gray-100 dark:border-slate-700/60 space-y-2">
+            <!-- Global Currency Select -->
+            <div class="flex items-center justify-between text-xs px-2 py-1 bg-gray-50 dark:bg-slate-900 rounded-xl">
+                <span class="text-gray-500 dark:text-gray-400">Currency:</span>
+                <select id="globalCurrency" class="bg-transparent text-slate-800 dark:text-slate-100 font-bold focus:outline-none cursor-pointer">
+                    <option value="$">USD ($)</option>
+                    <option value="€">EUR (€)</option>
+                    <option value="£">GBP (£)</option>
+                    <option value="₦">NGN (₦)</option>
+                    <option value="₹">INR (₹)</option>
+                    <option value="C$">CAD (C$)</option>
+                    <option value="A$">AUD (A$)</option>
+                </select>
+            </div>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-moon dark:hidden text-slate-600"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                    <span class="dark:hidden">Dark Mode</span>
+                    <span class="hidden dark:block">Light Mode</span>
+                </div>
+                <span class="text-[10px] text-gray-400 dark:text-gray-500"><i class="fa-solid fa-circle-half-stroke"></i></span>
+            </button>
+
+            <!-- Import / Export Actions -->
+            <div class="pt-1 flex items-center space-x-2">
+                <button id="exportDataBtn" title="Export Backup JSON" class="flex-1 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-[11px] font-medium rounded-lg text-gray-600 dark:text-gray-300 flex items-center justify-center space-x-1">
+                    <i class="fa-solid fa-download"></i>
+                    <span>Export</span>
+                </button>
+                <label title="Import Backup JSON" class="flex-1 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-[11px] font-medium rounded-lg text-gray-600 dark:text-gray-300 flex items-center justify-center space-x-1 cursor-pointer">
+                    <i class="fa-solid fa-upload"></i>
+                    <span>Import</span>
+                    <input type="file" id="importFileInput" accept=".json" class="hidden">
+                </label>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 min-w-0 flex flex-col h-screen overflow-hidden">
+        
+        <header class="p-4 md:p-5 border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 backdrop-blur-md sticky top-0 z-10 flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <h2 id="viewTitle" class="text-xl font-bold text-slate-900 dark:text-white">All Tasks</h2>
+                    <p id="viewSubtitle" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage your task list and linked expenses</p>
+                </div>
+
+                <!-- Search Input Bar -->
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search tasks, transactions, notes..." class="w-full pl-9 pr-9 py-2 text-xs bg-gray-100 dark:bg-slate-900 border border-transparent focus:border-blue-500 rounded-xl focus:outline-none text-slate-800 dark:text-slate-100 transition-all">
+                    <button id="clearSearchBtn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task Filter Bar -->
+            <div id="taskFilterBar" class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div class="flex items-center bg-gray-100 dark:bg-slate-900/60 p-1 rounded-xl text-xs font-medium">
+                    <button data-status="all" class="task-status-tab active-tab px-3 py-1 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 shadow-sm transition-all">All</button>
+                    <button data-status="todo" class="task-status-tab px-3 py-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all">To Do</button>
+                    <button data-status="in-progress" class="task-status-tab px-3 py-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all">In Progress</button>
+                    <button data-status="completed" class="task-status-tab px-3 py-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-all">Completed</button>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                    <select id="priorityFilter" class="bg-gray-100 dark:bg-slate-900/60 border border-transparent text-gray-700 dark:text-gray-300 py-1.5 px-2.5 rounded-xl outline-none">
+                        <option value="all">All Priorities</option>
+                        <option value="Urgent">🔴 Urgent</option>
+                        <option value="High">🟠 High</option>
+                        <option value="Medium">🟡 Medium</option>
+                        <option value="Low">🔵 Low</option>
+                    </select>
+
+                    <select id="categoryFilter" class="bg-gray-100 dark:bg-slate-900/60 border border-transparent text-gray-700 dark:text-gray-300 py-1.5 px-2.5 rounded-xl outline-none">
+                        <option value="all">All Categories</option>
+                    </select>
+
+                    <select id="sortBySelect" class="bg-gray-100 dark:bg-slate-900/60 border border-transparent text-gray-700 dark:text-gray-300 py-1.5 px-2.5 rounded-xl outline-none">
+                        <option value="dueDate-asc">Sort: Due Date (Earliest)</option>
+                        <option value="priority">Sort: Priority</option>
+                        <option value="created-desc">Sort: Newest</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Cashbook Filter Bar (Hidden by default) -->
+            <div id="cashFilterBar" class="hidden flex flex-wrap items-center justify-between gap-2 pt-1">
+                <div class="flex items-center bg-gray-100 dark:bg-slate-900/60 p-1 rounded-xl text-xs font-medium">
+                    <button data-cashtype="all" class="cash-type-tab active-tab px-3 py-1 rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-slate-800 shadow-sm">All Transactions</button>
+                    <button data-cashtype="income" class="cash-type-tab px-3 py-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-emerald-600">🟢 Income</button>
+                    <button data-cashtype="expense" class="cash-type-tab px-3 py-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-red-600">🔴 Expense</button>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap text-xs">
+                    <select id="cashCategoryFilter" class="bg-gray-100 dark:bg-slate-900/60 border border-transparent text-gray-700 dark:text-gray-300 py-1.5 px-2.5 rounded-xl outline-none">
+                        <option value="all">All Cash Categories</option>
+                    </select>
+
+                    <select id="cashTimeframeFilter" class="bg-gray-100 dark:bg-slate-900/60 border border-transparent text-gray-700 dark:text-gray-300 py-1.5 px-2.5 rounded-xl outline-none">
+                        <option value="all">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <div id="contentContainer" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+            
+            <!-- Tasks View Wrapper -->
+            <div id="tasksView" class="space-y-4 max-w-6xl mx-auto">
+                <div id="taskList" class="grid grid-cols-1 gap-3"></div>
+                
+                <div id="emptyTasksState" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                    <div class="w-16 h-16 bg-blue-50 dark:bg-slate-800 text-blue-500 rounded-2xl flex items-center justify-center text-2xl mb-3 shadow-inner">
+                        <i class="fa-solid fa-clipboard-check"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-slate-800 dark:text-slate-200">No tasks found</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 max-w-xs mt-1">Get started by logging a new task or clearing your search filters.</p>
+                </div>
+            </div>
+
+            <!-- Cash Book View Wrapper -->
+            <div id="cashbookView" class="hidden space-y-6 max-w-6xl mx-auto">
+                <!-- Financial Stats Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Income</span>
+                            <h4 id="statTotalIncome" class="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">$0.00</h4>
+                        </div>
+                        <div class="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-arrow-down-left"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Expenses</span>
+                            <h4 id="statTotalExpenses" class="text-xl font-bold text-red-600 dark:text-red-400 mt-1">$0.00</h4>
+                        </div>
+                        <div class="w-10 h-10 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-arrow-up-right"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Net Cashflow</span>
+                            <h4 id="statNetBalance" class="text-xl font-bold text-blue-600 dark:text-blue-400 mt-1">$0.00</h4>
+                        </div>
+                        <div class="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-scale-balanced"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Savings Ratio</span>
+                            <h4 id="statSavingsRatio" class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mt-1">0%</h4>
+                        </div>
+                        <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700/60 p-4 md:p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Cash Transactions Log</h3>
+                        <button id="addCashTransactionBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded-xl font-medium shadow-sm transition-all flex items-center space-x-1">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Entry</span>
+                        </button>
+                    </div>
+                    
+                    <div id="cashTransactionList" class="space-y-2"></div>
+
+                    <div id="emptyCashState" class="hidden flex flex-col items-center justify-center py-12 text-center">
+                        <div class="w-12 h-12 bg-emerald-50 dark:bg-slate-700 text-emerald-500 rounded-full flex items-center justify-center text-xl mb-2">
+                            <i class="fa-solid fa-receipt"></i>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">No transactions recorded yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard / Analytics View Wrapper -->
+            <div id="dashboardView" class="hidden space-y-6 max-w-6xl mx-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Cashflow Breakdown (Income vs Expenses)</h3>
+                        <div class="relative h-64 flex items-center justify-center">
+                            <canvas id="cashflowChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Expenses by Category</h3>
+                        <div class="relative h-64 flex items-center justify-center">
+                            <canvas id="expenseCategoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Task Completion Status</h3>
+                        <div class="relative h-64 flex items-center justify-center">
+                            <canvas id="statusChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-100 dark:border-slate-700/60 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">Task Priorities Distribution</h3>
+                        <div class="relative h-64 flex items-center justify-center">
+                            <canvas id="priorityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="taskModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 w-full max-w-xl overflow-hidden my-8">
+            <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
+                <h3 id="modalTitle" class="text-base font-bold text-slate-900 dark:text-white">Create New Task</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="taskForm" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="taskId">
+
+                <div>
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Task Title *</label>
+                    <input type="text" id="taskTitleInput" required placeholder="Task title..." class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Notes & Details</label>
+                    <textarea id="taskNotesInput" rows="2" placeholder="Details or description..." class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100 resize-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Priority</label>
+                        <select id="taskPriorityInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                            <option value="Low">🔵 Low</option>
+                            <option value="Medium" selected>🟡 Medium</option>
+                            <option value="High">🟠 High</option>
+                            <option value="Urgent">🔴 Urgent</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Category</label>
+                        <select id="taskCategoryInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Status</label>
+                        <select id="taskStatusInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                            <option value="todo">To Do</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Due Date</label>
+                        <input type="datetime-local" id="taskDueDateInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-gray-100 dark:border-slate-700">
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Subtasks Checklist</label>
+                    <div id="modalSubtaskList" class="space-y-1.5 mb-2 max-h-28 overflow-y-auto"></div>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="newSubtaskInput" placeholder="Add checklist item..." class="flex-1 px-3 py-1.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none">
+                        <button type="button" id="addSubtaskBtn" class="bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 px-3 py-1.5 rounded-xl font-medium">Add</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+                    <button type="button" id="cancelModalBtn" class="px-4 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-5 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="cashModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 w-full max-w-md overflow-hidden my-8">
+            <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50/50 dark:bg-slate-800/50">
+                <h3 id="cashModalTitle" class="text-base font-bold text-slate-900 dark:text-white">Log Cash Transaction</h3>
+                <button id="closeCashModalBtn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="cashForm" class="p-5 space-y-3 text-xs">
+                <input type="hidden" id="cashId">
+
+                <!-- Type Selector Tabs -->
+                <div>
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Transaction Type *</label>
+                    <div class="grid grid-cols-2 gap-2 p-1 bg-gray-100 dark:bg-slate-900 rounded-xl">
+                        <button type="button" id="typeIncomeBtn" class="py-2 rounded-lg font-bold text-center transition-all bg-emerald-600 text-white shadow-sm">🟢 Income</button>
+                        <button type="button" id="typeExpenseBtn" class="py-2 rounded-lg font-bold text-center text-gray-500 dark:text-gray-400 hover:text-slate-800 transition-all">🔴 Expense</button>
+                    </div>
+                    <input type="hidden" id="cashTypeInput" value="income">
+                </div>
+
+                <!-- Amount & Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Amount *</label>
+                        <div class="relative">
+                            <span id="cashCurrencyPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-gray-400">$</span>
+                            <input type="number" step="0.01" min="0.01" id="cashAmountInput" required placeholder="0.00" class="w-full pl-7 pr-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none font-semibold text-slate-800 dark:text-slate-100">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Date *</label>
+                        <input type="date" id="cashDateInput" required class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                    </div>
+                </div>
+
+                <!-- Cash Category -->
+                <div>
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Financial Category *</label>
+                    <select id="cashCategoryInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-slate-800 dark:text-slate-100"></select>
+                </div>
+
+                <!-- Description / Notes -->
+                <div>
+                    <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Description / Notes</label>
+                    <input type="text" id="cashDescInput" placeholder="e.g., Client Payment, Groceries..." class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-emerald-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                </div>
+
+                <!-- Link to Task Synergy -->
+                <div class="pt-2 border-t border-gray-100 dark:border-slate-700">
+                    <label class="block font-semibold text-blue-600 dark:text-blue-400 uppercase mb-1"><i class="fa-solid fa-link mr-1"></i> Link to Task (Optional Synergy)</label>
+                    <select id="cashLinkedTaskInput" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:border-blue-500 focus:outline-none text-slate-800 dark:text-slate-100">
+                        <option value="">-- No Linked Task --</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-end space-x-2 pt-3 border-t border-gray-100 dark:border-slate-700">
+                    <button type="button" id="cancelCashModalBtn" class="px-4 py-2 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl">Cancel</button>
+                    <button type="submit" class="px-5 py-2 font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md">Save Transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="categoryModal" class="fixed inset-0 z-50 flex items-center justify-center modal-backdrop hidden p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 w-full max-w-sm p-5 space-y-3 text-xs">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Add Task Category</h3>
+            <div>
+                <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Category Name</label>
+                <input type="text" id="newCategoryName" placeholder="e.g. Finance, Health" class="w-full px-3 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none">
+            </div>
+            <div>
+                <label class="block font-semibold text-gray-600 dark:text-gray-300 uppercase mb-1">Badge Color</label>
+                <input type="color" id="newCategoryColor" value="#10b981" class="w-full h-8 rounded-lg cursor-pointer border-0 bg-transparent">
+            </div>
+            <div class="flex items-center justify-end space-x-2 pt-2">
+                <button type="button" id="cancelCategoryBtn" class="px-3 py-1.5 font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl">Cancel</button>
+                <button type="button" id="saveCategoryBtn" class="px-4 py-1.5 font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <script>
+        const defaultTaskCategories = [
+            { id: 'cat-work', name: 'Work', color: '#3b82f6' },
+            { id: 'cat-personal', name: 'Personal', color: '#10b981' },
+            { id: 'cat-shopping', name: 'Shopping', color: '#f59e0b' },
+            { id: 'cat-fitness', name: 'Fitness', color: '#ec4899' }
+        ];
+
+        const defaultCashCategories = {
+            income: ['Salary', 'Freelance', 'Business', 'Investments', 'Gift', 'Other Income'],
+            expense: ['Groceries', 'Rent & Bills', 'Utilities', 'Transport', 'Entertainment', 'Subscriptions', 'Dining Out', 'Other Expense']
+        };
+
+        let appState = {
+            tasks: [],
+            cashTransactions: [],
+            categories: [],
+            currency: '$',
+            currentNav: 'all',
+            taskStatusFilter: 'all',
+            taskPriorityFilter: 'all',
+            taskCategoryFilter: 'all',
+            cashTypeFilter: 'all',
+            cashCategoryFilter: 'all',
+            cashTimeframeFilter: 'all',
+            searchQuery: '',
+            sortBy: 'dueDate-asc',
+            modalSubtasks: []
+        };
+
+        let statusChartInstance = null;
+        let priorityChartInstance = null;
+        let cashflowChartInstance = null;
+        let expenseCategoryChartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStateFromStorage();
+            setupEventListeners();
+            initTheme();
+            renderCategoryOptions();
+            renderApp();
+        });
+
+        function loadStateFromStorage() {
+            const savedTasks = localStorage.getItem('tf_tasks');
+            const savedCash = localStorage.getItem('tf_cash');
+            const savedCat = localStorage.getItem('tf_categories');
+            const savedCurr = localStorage.getItem('tf_currency');
+
+            appState.tasks = savedTasks ? JSON.parse(savedTasks) : [];
+            appState.cashTransactions = savedCash ? JSON.parse(savedCash) : [];
+            appState.categories = savedCat ? JSON.parse(savedCat) : defaultTaskCategories;
+            appState.currency = savedCurr || '$';
+
+            document.getElementById('globalCurrency').value = appState.currency;
+            document.getElementById('cashCurrencyPrefix').textContent = appState.currency;
+
+            if (appState.tasks.length === 0 && appState.cashTransactions.length === 0 && !localStorage.getItem('tf_initialized_v2')) {
+                seedSampleData();
+                localStorage.setItem('tf_initialized_v2', 'true');
+            }
+        }
+
+        function saveStateToStorage() {
+            localStorage.setItem('tf_tasks', JSON.stringify(appState.tasks));
+            localStorage.setItem('tf_cash', JSON.stringify(appState.cashTransactions));
+            localStorage.setItem('tf_categories', JSON.stringify(appState.categories));
+            localStorage.setItem('tf_currency', appState.currency);
+        }
+
+        function seedSampleData() {
+            const today = new Date().toISOString().slice(0, 10);
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+
+            appState.tasks = [
+                {
+                    id: 'task-101',
+                    title: 'Website Redesign for Client',
+                    notes: 'Deliver Figma mockups and code homepage.',
+                    priority: 'Urgent',
+                    category: 'cat-work',
+                    status: 'in-progress',
+                    dueDate: tomorrow,
+                    createdAt: new Date().toISOString(),
+                    subtasks: [
+                        { id: 'st-1', title: 'Figma Mockup', completed: true },
+                        { id: 'st-2', title: 'Frontend Code', completed: false }
+                    ]
+                },
+                {
+                    id: 'task-102',
+                    title: 'Weekly Grocery Shopping',
+                    notes: 'Stock up for the week.',
+                    priority: 'Medium',
+                    category: 'cat-shopping',
+                    status: 'todo',
+                    dueDate: tomorrow,
+                    createdAt: new Date().toISOString(),
+                    subtasks: []
+                }
+            ];
+
+            appState.cashTransactions = [
+                {
+                    id: 'cash-1',
+                    type: 'income',
+                    amount: 1200.00,
+                    category: 'Freelance',
+                    date: today,
+                    description: 'Client Deposit - Web Redesign',
+                    linkedTaskId: 'task-101'
+                },
+                {
+                    id: 'cash-2',
+                    type: 'expense',
+                    amount: 85.50,
+                    category: 'Groceries',
+                    date: today,
+                    description: 'Fresh Produce & Snacks',
+                    linkedTaskId: 'task-102'
+                }
+            ];
+
+            saveStateToStorage();
+        }
+
+        function initTheme() {
+            if (localStorage.getItem('tf_theme') === 'dark' || (!localStorage.getItem('tf_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('tf_theme', isDark ? 'dark' : 'light');
+            showToast(isDark ? 'Dark mode enabled' : 'Light mode enabled');
+            if (appState.currentNav === 'dashboard') renderCharts();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            document.getElementById('themeToggleMobile').addEventListener('click', toggleTheme);
+
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('-translate-x-full');
+            });
+            document.getElementById('closeSidebarBtn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+            });
+
+            document.getElementById('globalCurrency').addEventListener('change', (e) => {
+                appState.currency = e.target.value;
+                document.getElementById('cashCurrencyPrefix').textContent = appState.currency;
+                saveStateToStorage();
+                renderApp();
+            });
+
+            // Navigation Handler
+            document.querySelectorAll('[data-nav]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('[data-nav]').forEach(b => {
+                        b.classList.remove('bg-blue-50', 'text-blue-600', 'dark:bg-slate-700/60', 'dark:text-blue-400');
+                        b.classList.add('text-gray-600', 'dark:text-gray-300');
+                    });
+                    const target = e.currentTarget;
+                    target.classList.add('bg-blue-50', 'text-blue-600', 'dark:bg-slate-700/60', 'dark:text-blue-400');
+                    target.classList.remove('text-gray-600', 'dark:text-gray-300');
+                    
+                    appState.currentNav = target.dataset.nav;
+                    renderApp();
+                    document.getElementById('sidebar').classList.add('-translate-x-full');
+                });
+            });
+
+            // Search Filter Listener
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+            searchInput.addEventListener('input', (e) => {
+                appState.searchQuery = e.target.value.trim();
+                clearSearchBtn.classList.toggle('hidden', !appState.searchQuery);
+                renderApp();
+            });
+
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                appState.searchQuery = '';
+                clearSearchBtn.classList.add('hidden');
+                renderApp();
+            });
+
+            // Task Tabs & Filters
+            document.querySelectorAll('.task-status-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.task-status-tab').forEach(t => t.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-gray-700', 'dark:text-gray-200'));
+                    e.currentTarget.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-gray-700', 'dark:text-gray-200');
+                    appState.taskStatusFilter = e.currentTarget.dataset.status;
+                    renderApp();
+                });
+            });
+
+            document.getElementById('priorityFilter').addEventListener('change', (e) => { appState.taskPriorityFilter = e.target.value; renderApp(); });
+            document.getElementById('categoryFilter').addEventListener('change', (e) => { appState.taskCategoryFilter = e.target.value; renderApp(); });
+            document.getElementById('sortBySelect').addEventListener('change', (e) => { appState.sortBy = e.target.value; renderApp(); });
+
+            // Cashbook Tabs & Filters
+            document.querySelectorAll('.cash-type-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.cash-type-tab').forEach(t => t.classList.remove('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-gray-700', 'dark:text-gray-200'));
+                    e.currentTarget.classList.add('bg-white', 'dark:bg-slate-800', 'shadow-sm', 'text-gray-700', 'dark:text-gray-200');
+                    appState.cashTypeFilter = e.currentTarget.dataset.cashtype;
+                    renderApp();
+                });
+            });
+
+            document.getElementById('cashCategoryFilter').addEventListener('change', (e) => { appState.cashCategoryFilter = e.target.value; renderApp(); });
+            document.getElementById('cashTimeframeFilter').addEventListener('change', (e) => { appState.cashTimeframeFilter = e.target.value; renderApp(); });
+
+            // Modals Logic
+            document.getElementById('quickCreateTaskBtn').addEventListener('click', () => openTaskModal());
+            document.getElementById('closeModalBtn').addEventListener('click', () => document.getElementById('taskModal').classList.add('hidden'));
+            document.getElementById('cancelModalBtn').addEventListener('click', () => document.getElementById('taskModal').classList.add('hidden'));
+            document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
+
+            document.getElementById('quickCreateCashBtn').addEventListener('click', () => openCashModal());
+            document.getElementById('addCashTransactionBtn').addEventListener('click', () => openCashModal());
+            document.getElementById('closeCashModalBtn').addEventListener('click', () => document.getElementById('cashModal').classList.add('hidden'));
+            document.getElementById('cancelCashModalBtn').addEventListener('click', () => document.getElementById('cashModal').classList.add('hidden'));
+            document.getElementById('cashForm').addEventListener('submit', handleCashSubmit);
+
+            document.getElementById('addSubtaskBtn').addEventListener('click', addSubtaskInModal);
+
+            // Income / Expense Type Toggle in Modal
+            document.getElementById('typeIncomeBtn').addEventListener('click', () => setCashModalType('income'));
+            document.getElementById('typeExpenseBtn').addEventListener('click', () => setCashModalType('expense'));
+
+            // Category Modal
+            document.getElementById('addCategoryBtn').addEventListener('click', () => document.getElementById('categoryModal').classList.remove('hidden'));
+            document.getElementById('cancelCategoryBtn').addEventListener('click', () => document.getElementById('categoryModal').classList.add('hidden'));
+            document.getElementById('saveCategoryBtn').addEventListener('click', createCategory);
+
+            // Import / Export
+            document.getElementById('exportDataBtn').addEventListener('click', exportBackupJSON);
+            document.getElementById('importFileInput').addEventListener('change', importBackupJSON);
+        }
+
+        function setCashModalType(type) {
+            document.getElementById('cashTypeInput').value = type;
+            const incBtn = document.getElementById('typeIncomeBtn');
+            const expBtn = document.getElementById('typeExpenseBtn');
+
+            if (type === 'income') {
+                incBtn.className = 'py-2 rounded-lg font-bold text-center transition-all bg-emerald-600 text-white shadow-sm';
+                expBtn.className = 'py-2 rounded-lg font-bold text-center text-gray-500 dark:text-gray-400 hover:text-slate-800 transition-all';
+            } else {
+                expBtn.className = 'py-2 rounded-lg font-bold text-center transition-all bg-red-600 text-white shadow-sm';
+                incBtn.className = 'py-2 rounded-lg font-bold text-center text-gray-500 dark:text-gray-400 hover:text-slate-800 transition-all';
+            }
+            populateCashCategories();
+        }
+
+        function populateCashCategories() {
+            const type = document.getElementById('cashTypeInput').value;
+            const select = document.getElementById('cashCategoryInput');
+            select.innerHTML = '';
+            defaultCashCategories[type].forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                select.appendChild(opt);
+            });
+        }
+
+        function openTaskModal(task = null) {
+            const modal = document.getElementById('taskModal');
+            document.getElementById('taskForm').reset();
+            appState.modalSubtasks = [];
+
+            if (task) {
+                document.getElementById('modalTitle').textContent = 'Edit Task';
+                document.getElementById('taskId').value = task.id;
+                document.getElementById('taskTitleInput').value = task.title;
+                document.getElementById('taskNotesInput').value = task.notes || '';
+                document.getElementById('taskPriorityInput').value = task.priority;
+                document.getElementById('taskCategoryInput').value = task.category || appState.categories[0]?.id;
+                document.getElementById('taskStatusInput').value = task.status;
+                document.getElementById('taskDueDateInput').value = task.dueDate || '';
+                appState.modalSubtasks = task.subtasks ? JSON.parse(JSON.stringify(task.subtasks)) : [];
+            } else {
+                document.getElementById('modalTitle').textContent = 'Create New Task';
+                document.getElementById('taskId').value = '';
+                document.getElementById('taskDueDateInput').value = new Date(Date.now() + 86400000).toISOString().slice(0, 16);
+            }
+
+            renderModalSubtasks();
+            modal.classList.remove('hidden');
+            document.getElementById('taskTitleInput').focus();
+        }
+
+        function addSubtaskInModal() {
+            const input = document.getElementById('newSubtaskInput');
+            const val = input.value.trim();
+            if (!val) return;
+            appState.modalSubtasks.push({ id: 'st-' + Date.now(), title: val, completed: false });
+            input.value = '';
+            renderModalSubtasks();
+        }
+
+        function renderModalSubtasks() {
+            const container = document.getElementById('modalSubtaskList');
+            container.innerHTML = '';
+            appState.modalSubtasks.forEach((st, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-gray-50 dark:bg-slate-900 p-1.5 rounded-lg text-xs';
+                div.innerHTML = `
+                    <div class="flex items-center space-x-2 truncate">
+                        <input type="checkbox" ${st.completed ? 'checked' : ''} onchange="appState.modalSubtasks[${idx}].completed = !appState.modalSubtasks[${idx}].completed; renderModalSubtasks();">
+                        <span class="${st.completed ? 'line-through text-gray-400' : ''}">${escapeHTML(st.title)}</span>
+                    </div>
+                    <button type="button" onclick="appState.modalSubtasks.splice(${idx}, 1); renderModalSubtasks();" class="text-gray-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function handleTaskSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('taskId').value;
+            const title = document.getElementById('taskTitleInput').value.trim();
+            if (!title) return;
+
+            const taskData = {
+                title,
+                notes: document.getElementById('taskNotesInput').value.trim(),
+                priority: document.getElementById('taskPriorityInput').value,
+                category: document.getElementById('taskCategoryInput').value,
+                status: document.getElementById('taskStatusInput').value,
+                dueDate: document.getElementById('taskDueDateInput').value,
+                subtasks: appState.modalSubtasks
+            };
+
+            if (id) {
+                const idx = appState.tasks.findIndex(t => t.id === id);
+                if (idx !== -1) appState.tasks[idx] = { ...appState.tasks[idx], ...taskData };
+                showToast('Task updated!');
+            } else {
+                appState.tasks.unshift({ id: 'task-' + Date.now(), createdAt: new Date().toISOString(), ...taskData });
+                showToast('New task added!');
+            }
+
+            saveStateToStorage();
+            document.getElementById('taskModal').classList.add('hidden');
+            renderApp();
+        }
+
+        function openCashModal(entry = null) {
+            const modal = document.getElementById('cashModal');
+            document.getElementById('cashForm').reset();
+
+            // Populate task options for synergy link
+            const taskSelect = document.getElementById('cashLinkedTaskInput');
+            taskSelect.innerHTML = '<option value="">-- No Linked Task --</option>';
+            appState.tasks.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.title;
+                taskSelect.appendChild(opt);
+            });
+
+            if (entry) {
+                document.getElementById('cashModalTitle').textContent = 'Edit Cash Entry';
+                document.getElementById('cashId').value = entry.id;
+                document.getElementById('cashAmountInput').value = entry.amount;
+                document.getElementById('cashDateInput').value = entry.date;
+                document.getElementById('cashDescInput').value = entry.description || '';
+                document.getElementById('cashLinkedTaskInput').value = entry.linkedTaskId || '';
+                setCashModalType(entry.type);
+                document.getElementById('cashCategoryInput').value = entry.category;
+            } else {
+                document.getElementById('cashModalTitle').textContent = 'Log Cash Transaction';
+                document.getElementById('cashId').value = '';
+                document.getElementById('cashDateInput').value = new Date().toISOString().slice(0, 10);
+                setCashModalType('income');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function handleCashSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('cashId').value;
+            const amount = parseFloat(document.getElementById('cashAmountInput').value);
+            if (!amount || amount <= 0) return;
+
+            const entryData = {
+                type: document.getElementById('cashTypeInput').value,
+                amount: amount,
+                date: document.getElementById('cashDateInput').value,
+                category: document.getElementById('cashCategoryInput').value,
+                description: document.getElementById('cashDescInput').value.trim(),
+                linkedTaskId: document.getElementById('cashLinkedTaskInput').value || null
+            };
+
+            if (id) {
+                const idx = appState.cashTransactions.findIndex(c => c.id === id);
+                if (idx !== -1) appState.cashTransactions[idx] = { ...appState.cashTransactions[idx], ...entryData };
+                showToast('Transaction updated!');
+            } else {
+                appState.cashTransactions.unshift({ id: 'cash-' + Date.now(), ...entryData });
+                showToast('Transaction logged!');
+            }
+
+            saveStateToStorage();
+            document.getElementById('cashModal').classList.add('hidden');
+            renderApp();
+        }
+
+        function createCategory() {
+            const name = document.getElementById('newCategoryName').value.trim();
+            if (!name) return;
+            appState.categories.push({ id: 'cat-' + Date.now(), name, color: document.getElementById('newCategoryColor').value });
+            saveStateToStorage();
+            renderCategoryOptions();
+            document.getElementById('categoryModal').classList.add('hidden');
+            showToast('Category created');
+        }
+
+        function renderCategoryOptions() {
+            const list = document.getElementById('categoryNavList');
+            const taskInput = document.getElementById('taskCategoryInput');
+            const taskFilter = document.getElementById('categoryFilter');
+
+            list.innerHTML = '';
+            taskInput.innerHTML = '';
+            taskFilter.innerHTML = '<option value="all">All Categories</option>';
+
+            appState.categories.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between text-xs py-1 px-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50 cursor-pointer';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2 truncate">
+                        <span class="w-2 h-2 rounded-full" style="background-color: ${cat.color}"></span>
+                        <span class="truncate text-slate-700 dark:text-slate-300">${escapeHTML(cat.name)}</span>
+                    </div>
+                `;
+                item.onclick = () => { appState.taskCategoryFilter = cat.id; taskFilter.value = cat.id; renderApp(); };
+                list.appendChild(item);
+
+                const opt1 = new Option(cat.name, cat.id);
+                const opt2 = new Option(cat.name, cat.id);
+                taskInput.add(opt1);
+                taskFilter.add(opt2);
+            });
+
+            // Cash category filter dropdown
+            const cashCatFilter = document.getElementById('cashCategoryFilter');
+            cashCatFilter.innerHTML = '<option value="all">All Cash Categories</option>';
+            [...defaultCashCategories.income, ...defaultCashCategories.expense].forEach(cat => {
+                cashCatFilter.add(new Option(cat, cat));
+            });
+        }
+
+        function renderApp() {
+            updateNavCounts();
+
+            const title = document.getElementById('viewTitle');
+            const subtitle = document.getElementById('viewSubtitle');
+            const tasksView = document.getElementById('tasksView');
+            const cashbookView = document.getElementById('cashbookView');
+            const dashboardView = document.getElementById('dashboardView');
+            const taskFilterBar = document.getElementById('taskFilterBar');
+            const cashFilterBar = document.getElementById('cashFilterBar');
+
+            tasksView.classList.add('hidden');
+            cashbookView.classList.add('hidden');
+            dashboardView.classList.add('hidden');
+            taskFilterBar.classList.add('hidden');
+            cashFilterBar.classList.add('hidden');
+
+            if (appState.currentNav === 'cashbook') {
+                title.textContent = 'Cash Book & Cashflow';
+                subtitle.textContent = 'Track income, expenses, and task finances';
+                cashbookView.classList.remove('hidden');
+                cashFilterBar.classList.remove('hidden');
+                renderCashbook();
+            } else if (appState.currentNav === 'dashboard') {
+                title.textContent = 'Analytics & Reports';
+                subtitle.textContent = 'Overview of productivity & financial performance';
+                dashboardView.classList.remove('hidden');
+                renderCharts();
+            } else {
+                title.textContent = appState.currentNav === 'today' ? 'Due Today' : (appState.currentNav === 'overdue' ? 'Overdue Tasks' : 'Tasks & To-Dos');
+                subtitle.textContent = 'Manage tasks and linked finances';
+                tasksView.classList.remove('hidden');
+                taskFilterBar.classList.remove('hidden');
+                renderTaskList();
+            }
+        }
+
+        function updateNavCounts() {
+            document.getElementById('navCountAll').textContent = appState.tasks.length;
+            document.getElementById('navCountCash').textContent = appState.cashTransactions.length;
+            const now = new Date();
+            const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+            document.getElementById('navCountToday').textContent = appState.tasks.filter(t => t.dueDate && new Date(t.dueDate) >= startOfToday && new Date(t.dueDate) <= endOfToday).length;
+            document.getElementById('navCountOverdue').textContent = appState.tasks.filter(t => t.dueDate && new Date(t.dueDate) < startOfToday && t.status !== 'completed').length;
+        }
+
+        function renderTaskList() {
+            const list = document.getElementById('taskList');
+            const empty = document.getElementById('emptyTasksState');
+            list.innerHTML = '';
+
+            const filtered = appState.tasks.filter(task => {
+                if (appState.currentNav === 'today') {
+                    const d = task.dueDate ? new Date(task.dueDate) : null;
+                    const now = new Date();
+                    if (!d || d < new Date(now.getFullYear(), now.getMonth(), now.getDate()) || d > new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59)) return false;
+                } else if (appState.currentNav === 'overdue') {
+                    const d = task.dueDate ? new Date(task.dueDate) : null;
+                    if (!d || d >= new Date() || task.status === 'completed') return false;
+                }
+
+                if (appState.taskStatusFilter !== 'all' && task.status !== appState.taskStatusFilter) return false;
+                if (appState.taskPriorityFilter !== 'all' && task.priority !== appState.taskPriorityFilter) return false;
+                if (appState.taskCategoryFilter !== 'all' && task.category !== appState.taskCategoryFilter) return false;
+
+                if (appState.searchQuery) {
+                    const q = appState.searchQuery.toLowerCase();
+                    return task.title.toLowerCase().includes(q) || (task.notes && task.notes.toLowerCase().includes(q));
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            filtered.forEach(task => {
+                const cat = appState.categories.find(c => c.id === task.category) || { name: 'Uncategorized', color: '#6b7280' };
+                const linkedCash = appState.cashTransactions.filter(c => c.linkedTaskId === task.id);
+                
+                let incomeTotal = 0, expenseTotal = 0;
+                linkedCash.forEach(c => {
+                    if (c.type === 'income') incomeTotal += c.amount;
+                    else expenseTotal += c.amount;
+                });
+
+                const card = document.createElement('div');
+                card.className = `task-card bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700/80 shadow-sm ${task.status === 'completed' ? 'opacity-70' : ''}`;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between gap-3 text-xs">
+                        <div class="flex items-start space-x-3 flex-1 min-w-0">
+                            <button onclick="toggleTaskStatus('${task.id}')" class="mt-0.5 w-5 h-5 rounded-lg flex items-center justify-center transition-colors ${task.status === 'completed' ? 'bg-emerald-500 text-white' : 'border-2 border-gray-300 dark:border-slate-600 hover:border-blue-500'}">
+                                ${task.status === 'completed' ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+                            </button>
+
+                            <div class="space-y-1 flex-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="font-semibold text-slate-800 dark:text-slate-100 text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : ''}">${escapeHTML(task.title)}</h3>
+                                    <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-blue-50 dark:bg-slate-700 text-blue-600 dark:text-blue-400">${task.priority}</span>
+                                </div>
+
+                                ${task.notes ? `<p class="text-gray-500 dark:text-gray-400 text-xs">${escapeHTML(task.notes)}</p>` : ''}
+
+                                <div class="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                                    <span class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-900">
+                                        <span class="w-1.5 h-1.5 rounded-full" style="background-color: ${cat.color}"></span>
+                                        <span>${escapeHTML(cat.name)}</span>
+                                    </span>
+
+                                    ${incomeTotal > 0 ? `<span class="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-900/40 text-emerald-600 font-bold"><i class="fa-solid fa-plus text-[9px] mr-0.5"></i>${appState.currency}${incomeTotal.toFixed(2)}</span>` : ''}
+                                    ${expenseTotal > 0 ? `<span class="px-2 py-0.5 rounded-md bg-red-50 dark:bg-red-900/40 text-red-600 font-bold"><i class="fa-solid fa-minus text-[9px] mr-0.5"></i>${appState.currency}${expenseTotal.toFixed(2)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-1">
+                            <button onclick="editTask('${task.id}')" class="p-1.5 text-gray-400 hover:text-blue-500"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteTask('${task.id}')" class="p-1.5 text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function renderCashbook() {
+            const list = document.getElementById('cashTransactionList');
+            const empty = document.getElementById('emptyCashState');
+            list.innerHTML = '';
+
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            const filtered = appState.cashTransactions.filter(c => {
+                if (appState.cashTypeFilter !== 'all' && c.type !== appState.cashTypeFilter) return false;
+                if (appState.cashCategoryFilter !== 'all' && c.category !== appState.cashCategoryFilter) return false;
+                
+                if (appState.searchQuery) {
+                    const q = appState.searchQuery.toLowerCase();
+                    return c.category.toLowerCase().includes(q) || (c.description && c.description.toLowerCase().includes(q));
+                }
+
+                return true;
+            });
+
+            // Calculate overall totals regardless of active list filters
+            appState.cashTransactions.forEach(c => {
+                if (c.type === 'income') totalIncome += c.amount;
+                else totalExpense += c.amount;
+            });
+
+            const net = totalIncome - totalExpense;
+            const savingsRatio = totalIncome > 0 ? Math.max(0, Math.round((net / totalIncome) * 100)) : 0;
+
+            document.getElementById('statTotalIncome').textContent = `${appState.currency}${totalIncome.toFixed(2)}`;
+            document.getElementById('statTotalExpenses').textContent = `${appState.currency}${totalExpense.toFixed(2)}`;
+            document.getElementById('statNetBalance').textContent = `${appState.currency}${net.toFixed(2)}`;
+            document.getElementById('statSavingsRatio').textContent = `${savingsRatio}%`;
+
+            if (filtered.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            filtered.forEach(entry => {
+                const linkedTask = entry.linkedTaskId ? appState.tasks.find(t => t.id === entry.linkedTaskId) : null;
+
+                const card = document.createElement('div');
+                card.className = 'cash-card bg-gray-50 dark:bg-slate-900/60 p-3 rounded-xl border border-gray-100 dark:border-slate-700/60 flex items-center justify-between text-xs';
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3 min-w-0 flex-1">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-bold ${entry.type === 'income' ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600' : 'bg-red-100 dark:bg-red-900/40 text-red-600'}">
+                            <i class="fa-solid ${entry.type === 'income' ? 'fa-arrow-down' : 'fa-arrow-up'}"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-slate-800 dark:text-slate-100">${escapeHTML(entry.category)}</span>
+                                <span class="text-[10px] text-gray-400">${entry.date}</span>
+                            </div>
+                            ${entry.description ? `<p class="text-gray-500 dark:text-gray-400 truncate text-[11px]">${escapeHTML(entry.description)}</p>` : ''}
+                            ${linkedTask ? `<span class="inline-flex items-center text-[10px] text-blue-500 mt-0.5"><i class="fa-solid fa-link mr-1"></i>Task: ${escapeHTML(linkedTask.title)}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <span class="font-bold text-sm ${entry.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}">
+                            ${entry.type === 'income' ? '+' : '-'}${appState.currency}${entry.amount.toFixed(2)}
+                        </span>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="editCash('${entry.id}')" class="p-1 text-gray-400 hover:text-blue-500"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteCash('${entry.id}')" class="p-1 text-gray-400 hover:text-red-500"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function toggleTaskStatus(id) {
+            const task = appState.tasks.find(t => t.id === id);
+            if (task) {
+                task.status = task.status === 'completed' ? 'todo' : 'completed';
+                saveStateToStorage();
+                renderApp();
+            }
+        }
+
+        function editTask(id) { openTaskModal(appState.tasks.find(t => t.id === id)); }
+        function deleteTask(id) {
+            appState.tasks = appState.tasks.filter(t => t.id !== id);
+            saveStateToStorage();
+            renderApp();
+            showToast('Task deleted');
+        }
+
+        function editCash(id) { openCashModal(appState.cashTransactions.find(c => c.id === id)); }
+        function deleteCash(id) {
+            appState.cashTransactions = appState.cashTransactions.filter(c => c.id !== id);
+            saveStateToStorage();
+            renderApp();
+            showToast('Transaction deleted');
+        }
+
+        function renderCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+
+            // 1. Cashflow Doughnut
+            let inc = 0, exp = 0;
+            appState.cashTransactions.forEach(c => { if (c.type === 'income') inc += c.amount; else exp += c.amount; });
+
+            if (cashflowChartInstance) cashflowChartInstance.destroy();
+            cashflowChartInstance = new Chart(document.getElementById('cashflowChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{ data: [inc, exp], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+            });
+
+            // 2. Expense by Category Bar
+            const expCategories = {};
+            appState.cashTransactions.filter(c => c.type === 'expense').forEach(c => {
+                expCategories[c.category] = (expCategories[c.category] || 0) + c.amount;
+            });
+
+            if (expenseCategoryChartInstance) expenseCategoryChartInstance.destroy();
+            expenseCategoryChartInstance = new Chart(document.getElementById('expenseCategoryChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(expCategories),
+                    datasets: [{ label: 'Expense Amount', data: Object.values(expCategories), backgroundColor: '#f59e0b', borderRadius: 6 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        y: { ticks: { color: textColor }, grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } }
+                    }
+                }
+            });
+
+            // 3. Task Status Doughnut
+            const todo = appState.tasks.filter(t => t.status === 'todo').length;
+            const inprog = appState.tasks.filter(t => t.status === 'in-progress').length;
+            const comp = appState.tasks.filter(t => t.status === 'completed').length;
+
+            if (statusChartInstance) statusChartInstance.destroy();
+            statusChartInstance = new Chart(document.getElementById('statusChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['To Do', 'In Progress', 'Completed'],
+                    datasets: [{ data: [todo, inprog, comp], backgroundColor: ['#f59e0b', '#3b82f6', '#10b981'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+            });
+
+            // 4. Task Priorities Bar
+            const urgent = appState.tasks.filter(t => t.priority === 'Urgent').length;
+            const high = appState.tasks.filter(t => t.priority === 'High').length;
+            const med = appState.tasks.filter(t => t.priority === 'Medium').length;
+            const low = appState.tasks.filter(t => t.priority === 'Low').length;
+
+            if (priorityChartInstance) priorityChartInstance.destroy();
+            priorityChartInstance = new Chart(document.getElementById('priorityChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Urgent', 'High', 'Medium', 'Low'],
+                    datasets: [{ label: 'Tasks', data: [urgent, high, med, low], backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#3b82f6'], borderRadius: 6 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: textColor }, grid: { display: false } },
+                        y: { ticks: { color: textColor }, grid: { color: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        // Export/Import JSON Backup
+        function exportBackupJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const anchor = document.createElement('a');
+            anchor.setAttribute("href", dataStr);
+            anchor.setAttribute("download", `taskflow_backup_${new Date().toISOString().slice(0, 10)}.json`);
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            showToast('Backup exported');
+        }
+
+        function importBackupJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (imported.tasks && imported.cashTransactions) {
+                        appState.tasks = imported.tasks;
+                        appState.cashTransactions = imported.cashTransactions;
+                        if (imported.categories) appState.categories = imported.categories;
+                        saveStateToStorage();
+                        renderCategoryOptions();
+                        renderApp();
+                        showToast('Data imported successfully');
+                    }
+                } catch (err) { showToast('Invalid backup file'); }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 text-xs font-medium px-3.5 py-2 rounded-xl shadow-xl flex items-center space-x-2 pointer-events-auto transition-all duration-300 opacity-0 translate-y-2';
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-blue-400"></i><span>${escapeHTML(msg)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('opacity-0', 'translate-y-2'), 10);
+            setTimeout(() => { toast.classList.add('opacity-0', 'translate-y-2'); setTimeout(() => toast.remove(), 300); }, 2500);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+        }
+    </script>
+</body>
+</html>
